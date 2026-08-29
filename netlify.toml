@@ -1,0 +1,7 @@
+# netlify.toml
+[build]
+  command = "npm run build"
+  publish = "build"
+
+[build.environment]
+  NODE_VERSION = "20" # Utiliser Node.js LTS version 20
