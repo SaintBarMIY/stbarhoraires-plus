@@ -1,7 +1,6 @@
 /* global __initial_auth_token */
 
 import React, { useEffect, useState } from 'react';
-
 import { initializeApp } from 'firebase/app';
 
 import {
@@ -20,21 +19,11 @@ import {
   onSnapshot
 } from 'firebase/firestore';
 
-
-/* =========================================================
-   ADMINISTRATEURS AUTORISÉS
-========================================================= */
-
 const ADMIN_EMAILS = [
   'miy@belgacom.net',
   'hef@saintbar.be',
   'blv@saintbar.be'
 ];
-
-
-/* =========================================================
-   CONSTANTES
-========================================================= */
 
 const UNKNOWN_PROFESSOR_KEY = 'INCONNU';
 
@@ -76,41 +65,25 @@ const HOUR_MAP = {
   '8': '15h55-16h45'
 };
 
-
-/* =========================================================
-   NETTOYAGE DES CHAMPS
-========================================================= */
-
 const cleanField = (value) => {
 
   if (
     value === undefined ||
     value === null
   ) {
-
     return '';
-
   }
 
   return String(value)
     .trim()
     .replace(/^"|"$/g, '');
-
 };
-
-
-/* =========================================================
-   CONVERSION DES SETS EN TABLEAUX
-========================================================= */
 
 const convertSetsToArrays = (obj) => {
 
   if (Array.isArray(obj)) {
-
     return obj.map(convertSetsToArrays);
-
   }
-
 
   if (
     typeof obj === 'object' &&
@@ -132,22 +105,156 @@ const convertSetsToArrays = (obj) => {
           convertSetsToArrays(
             obj[key]
           );
-
       }
 
     });
 
     return newObj;
-
   }
 
   return obj;
-
 };
 
 
 /* =========================================================
-   MODAL EMPLOI DU TEMPS
+   REGROUPEMENT DES CLASSES
+   Exemple : 6A + 6B + 6C = 6ABC
+========================================================= */
+
+const groupClasses = (classes) => {
+
+  const groups = {};
+
+  classes.forEach((className) => {
+
+    const value =
+      String(className || '')
+        .trim();
+
+    if (!value) {
+      return;
+    }
+
+    const match =
+      value.match(
+        /^(\d+)(.*)$/
+      );
+
+    if (match) {
+
+      const level =
+        match[1];
+
+      const letters =
+        match[2];
+
+      if (!groups[level]) {
+        groups[level] = [];
+      }
+
+      groups[level].push(
+        letters
+      );
+
+    } else {
+
+      if (!groups[value]) {
+        groups[value] = [];
+      }
+
+      groups[value].push('');
+    }
+
+  });
+
+  return Object.keys(groups)
+    .sort()
+    .map((level) => {
+
+      const letters =
+        groups[level]
+          .join('')
+          .split('')
+          .filter(
+            (
+              value,
+              index,
+              array
+            ) =>
+              array.indexOf(value) ===
+              index
+          )
+          .sort()
+          .join('');
+
+      return level + letters;
+    })
+    .join(' / ');
+};
+
+
+/* =========================================================
+   REGROUPEMENT DES ENTREES D'UN PROFESSEUR
+   Meme cours + meme local = classes regroupees
+========================================================= */
+
+const groupProfessorEntries = (
+  entries
+) => {
+
+  const groups = {};
+
+  entries.forEach((entry) => {
+
+    const key =
+      String(
+        entry.course || ''
+      ) +
+      '|' +
+      String(
+        entry.room || ''
+      );
+
+    if (!groups[key]) {
+
+      groups[key] = {
+
+        course:
+          entry.course,
+
+        room:
+          entry.room,
+
+        classes: []
+
+      };
+    }
+
+    groups[key].classes.push(
+      entry.class
+    );
+  });
+
+  return Object.keys(groups)
+    .map((key) => ({
+
+      course:
+        groups[key].course,
+
+      room:
+        groups[key].room,
+
+      classes:
+        groupClasses(
+          groups[key].classes
+        )
+
+    }));
+};
+
+
+/* =========================================================
+   MODAL EMPLOI DU TEMPS INDIVIDUEL
 ========================================================= */
 
 const ScheduleModal = ({
@@ -157,225 +264,86 @@ const ScheduleModal = ({
   onClose
 }) => {
 
-
-  /* =======================================================
-     CONSTRUCTION DE LA GRILLE
-  ======================================================= */
-
   const scheduleGrid = {};
 
-  DAYS_OF_WEEK.forEach((day) => {
+  DAYS_OF_WEEK.forEach(
+    (day) => {
 
-    scheduleGrid[day] = {};
+      scheduleGrid[day] = {};
 
-    HOURS_OF_DAY.forEach((hour) => {
+      HOURS_OF_DAY.forEach(
+        (hour) => {
 
-      scheduleGrid[day][hour] = [];
+          scheduleGrid[day][hour] =
+            [];
 
-    });
-
-  });
-
-
-  /* =======================================================
-     AJOUT DE TOUS LES COURS
-  ======================================================= */
-
-  scheduleData.forEach((entry) => {
-
-    const day =
-      String(entry.day);
-
-    const hour =
-      String(entry.hour);
-
-
-    if (
-      DAYS_OF_WEEK.includes(day) &&
-      HOURS_OF_DAY.includes(hour)
-    ) {
-
-      scheduleGrid[day][hour].push(
-        entry
+        }
       );
 
     }
-
-  });
-
-
-  /* =======================================================
-     REGROUPEMENT DES CLASSES
-     
-     Exemple :
-     6A + 6B + 6C = 6ABC
-  ======================================================= */
-
-  const groupClasses = (classes) => {
-
-    const groups = {};
+  );
 
 
-    classes.forEach((className) => {
+  scheduleData.forEach(
+    (entry) => {
 
-      const value =
-        String(className || '')
-          .trim();
+      const day =
+        String(entry.day);
 
+      const hour =
+        String(entry.hour);
 
-      if (!value) {
+      if (
+        DAYS_OF_WEEK.includes(day) &&
+        HOURS_OF_DAY.includes(hour)
+      ) {
 
-        return;
-
-      }
-
-
-      const match =
-        value.match(
-          /^(\d+)(.*)$/
+        scheduleGrid[
+          day
+        ][
+          hour
+        ].push(
+          entry
         );
 
-
-      if (match) {
-
-        const level =
-          match[1];
-
-        const letters =
-          match[2];
-
-
-        if (!groups[level]) {
-
-          groups[level] = [];
-
-        }
-
-
-        groups[level].push(
-          letters
-        );
-
-      } else {
-
-        if (!groups[value]) {
-
-          groups[value] = [];
-
-        }
-
-        groups[value].push('');
-
       }
-
-    });
-
-
-    return Object.keys(groups)
-      .sort()
-      .map((level) => {
-
-        const letters =
-          groups[level]
-            .join('')
-            .split('')
-            .filter(
-              (
-                value,
-                index,
-                array
-              ) =>
-                array.indexOf(value) ===
-                index
-            )
-            .sort()
-            .join('');
-
-
-        return level + letters;
-
-      })
-      .join(' / ');
-
-  };
-
-
-  /* =======================================================
-     AFFICHAGE D'UNE CASE
-  ======================================================= */
-
-  const renderScheduleCell = (
-    entries
-  ) => {
-
-    if (
-      !entries ||
-      entries.length === 0
-    ) {
-
-      return null;
 
     }
+  );
 
 
-    /* =====================================================
-       PROFESSEURS
-    ===================================================== */
+  const renderScheduleCell =
+    (entries) => {
 
-    if (
-      scheduleType === 'professors'
-    ) {
+      if (
+        !entries ||
+        entries.length === 0
+      ) {
 
-      const groups = {};
+        return null;
+
+      }
 
 
-      entries.forEach((entry) => {
+      if (
+        scheduleType ===
+        'professors'
+      ) {
 
-        const key =
-          String(
-            entry.course || ''
-          ) +
-          '|' +
-          String(
-            entry.room || ''
+        const grouped =
+          groupProfessorEntries(
+            entries
           );
 
 
-        if (!groups[key]) {
-
-          groups[key] = {
-
-            course:
-              entry.course,
-
-            room:
-              entry.room,
-
-            classes: []
-
-          };
-
-        }
-
-
-        groups[key].classes.push(
-          entry.class
-        );
-
-      });
-
-
-      return Object.keys(groups)
-        .map((key) => {
-
-          const group =
-            groups[key];
-
-
-          return (
+        return grouped.map(
+          (
+            group,
+            index
+          ) => (
 
             <div
-              key={key}
+              key={index}
               className="schedule-cell schedule-cell-blue mb-1"
             >
 
@@ -390,9 +358,7 @@ const ScheduleModal = ({
 
                 Classe :{' '}
 
-                {groupClasses(
-                  group.classes
-                )}
+                {group.classes}
 
               </div>
 
@@ -407,170 +373,151 @@ const ScheduleModal = ({
 
             </div>
 
-          );
+          )
+        );
 
-        });
-
-    }
-
-
-    /* =====================================================
-       CLASSES
-    ===================================================== */
-
-    if (
-      scheduleType === 'classes'
-    ) {
-
-      return entries.map(
-        (
-          entry,
-          index
-        ) => (
-
-          <div
-            key={index}
-            className="schedule-cell schedule-cell-green mb-1"
-          >
-
-            <div className="font-bold text-green-800 text-sm sm:text-base">
-
-              {entry.course}
-
-            </div>
+      }
 
 
-            <div className="text-gray-700 text-xs mt-1">
+      if (
+        scheduleType ===
+        'classes'
+      ) {
 
-              Prof :{' '}
+        return entries.map(
+          (
+            entry,
+            index
+          ) => (
 
-              {entry.professorName}
+            <div
+              key={index}
+              className="schedule-cell schedule-cell-green mb-1"
+            >
 
-            </div>
+              <div className="font-bold text-green-800 text-sm sm:text-base">
+
+                {entry.course}
+
+              </div>
 
 
-            <div className="text-gray-700 text-xs">
+              <div className="text-gray-700 text-xs mt-1">
 
-              Local :{' '}
+                Prof :{' '}
 
-              {entry.room}
+                {entry.professorName}
+
+              </div>
+
+
+              <div className="text-gray-700 text-xs">
+
+                Local :{' '}
+
+                {entry.room}
+
+              </div>
 
             </div>
 
-          </div>
+          )
+        );
 
-        )
-      );
-
-    }
+      }
 
 
-    /* =====================================================
-       LOCAUX
-    ===================================================== */
+      if (
+        scheduleType ===
+        'rooms'
+      ) {
 
-    if (
-      scheduleType === 'rooms'
-    ) {
+        return entries.map(
+          (
+            entry,
+            index
+          ) => (
 
-      return entries.map(
-        (
-          entry,
-          index
-        ) => (
+            <div
+              key={index}
+              className="schedule-cell schedule-cell-purple mb-1"
+            >
 
-          <div
-            key={index}
-            className="schedule-cell schedule-cell-purple mb-1"
-          >
+              <div className="font-bold text-purple-800 text-sm sm:text-base">
 
-            <div className="font-bold text-purple-800 text-sm sm:text-base">
+                {entry.course}
 
-              {entry.course}
-
-            </div>
+              </div>
 
 
-            <div className="text-gray-700 text-xs mt-1">
+              <div className="text-gray-700 text-xs mt-1">
 
-              Prof :{' '}
+                Prof :{' '}
 
-              {entry.professorName}
+                {entry.professorName}
 
-            </div>
+              </div>
 
 
-            <div className="text-gray-700 text-xs">
+              <div className="text-gray-700 text-xs">
 
-              Classe :{' '}
+                Classe :{' '}
 
-              {entry.class}
+                {entry.class}
+
+              </div>
 
             </div>
 
-          </div>
+          )
+        );
 
-        )
-      );
-
-    }
+      }
 
 
-    return null;
+      return null;
 
-  };
+    };
 
-
-  /* =======================================================
-     TITRE DE LA FENÊTRE
-  ======================================================= */
 
   let modalTitle = '';
 
 
-  switch (scheduleType) {
+  if (
+    scheduleType ===
+    'professors'
+  ) {
 
-    case 'professors':
+    modalTitle =
+      'Emploi du temps de ' +
+      entityName;
 
-      modalTitle =
-        'Emploi du temps de ' +
-        entityName;
+  } else if (
+    scheduleType ===
+    'classes'
+  ) {
 
-      break;
+    modalTitle =
+      'Emploi du temps de la classe ' +
+      entityName;
 
+  } else if (
+    scheduleType ===
+    'rooms'
+  ) {
 
-    case 'classes':
+    modalTitle =
+      'Emploi du temps du local ' +
+      entityName;
 
-      modalTitle =
-        'Emploi du temps de la classe ' +
-        entityName;
+  } else {
 
-      break;
-
-
-    case 'rooms':
-
-      modalTitle =
-        'Emploi du temps du local ' +
-        entityName;
-
-      break;
-
-
-    default:
-
-      modalTitle =
-        'Détails pour ' +
-        entityName;
-
-      break;
+    modalTitle =
+      'Details pour ' +
+      entityName;
 
   }
 
-
-  /* =======================================================
-     IMPRESSION
-  ======================================================= */
 
   const handlePrint = () => {
 
@@ -584,11 +531,6 @@ const ScheduleModal = ({
     <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-2 sm:p-4 z-50 print-container">
 
       <div className="bg-white rounded-lg shadow-xl p-3 sm:p-6 w-full max-w-6xl mx-auto print-area">
-
-
-        {/* =================================================
-            TITRE
-        ================================================= */}
 
         <div className="flex justify-between items-center border-b pb-3 mb-4 print-header">
 
@@ -611,10 +553,6 @@ const ScheduleModal = ({
 
         </div>
 
-
-        {/* =================================================
-            EMPLOI DU TEMPS
-        ================================================= */}
 
         {scheduleData.length > 0 ? (
 
@@ -710,16 +648,12 @@ const ScheduleModal = ({
 
           <p className="text-gray-600">
 
-            Aucun emploi du temps trouvé pour cette entité.
+            Aucun emploi du temps trouve pour cette entite.
 
           </p>
 
         )}
 
-
-        {/* =================================================
-            BOUTONS
-        ================================================= */}
 
         <div className="flex flex-col sm:flex-row justify-end gap-2 mt-4 no-print">
 
@@ -745,12 +679,6 @@ const ScheduleModal = ({
         </div>
 
       </div>
-
-
-      {/* =================================================
-          CSS IMPRESSION
-      ================================================= */}
-
       <style>{`
 
         .schedule-cell {
@@ -783,6 +711,7 @@ const ScheduleModal = ({
           top: 0;
         }
 
+
         @media (max-width: 640px) {
 
           .schedule-scroll {
@@ -799,6 +728,7 @@ const ScheduleModal = ({
           }
 
         }
+
 
         @media print {
 
@@ -889,82 +819,542 @@ const ScheduleModal = ({
 
 
 /* =========================================================
+   VUE D'IMPRESSION MULTIPLE
+========================================================= */
+
+const MultiPrintView = ({
+  scheduleType,
+  selectedEntities,
+  allSchedules
+}) => {
+
+
+  if (
+    !selectedEntities ||
+    selectedEntities.length === 0
+  ) {
+
+    return null;
+
+  }
+
+
+  /* =======================================================
+     RECHERCHE DU COURS POUR UN JOUR ET UNE HEURE
+  ======================================================= */
+
+  const getEntriesForSlot = (
+    entity,
+    day,
+    hour
+  ) => {
+
+    const entries =
+      allSchedules[
+        scheduleType
+      ]?.[
+        entity
+      ] || [];
+
+
+    return entries.filter(
+      (entry) =>
+
+        String(entry.day) === day &&
+
+        String(entry.hour) === hour
+
+    );
+
+  };
+
+
+  /* =======================================================
+     CONTENU COMPACT D'UNE CELLULE
+  ======================================================= */
+
+  const renderCompactCell =
+    (entries) => {
+
+
+      if (
+        !entries ||
+        entries.length === 0
+      ) {
+
+        return (
+
+          <span className="multi-empty">
+
+            -
+
+          </span>
+
+        );
+
+      }
+
+
+      /* =================================================
+         PROFESSEURS
+         Exemple :
+         MAT6 - 6ABC - F12
+      ================================================= */
+
+      if (
+        scheduleType ===
+        'professors'
+      ) {
+
+        const grouped =
+          groupProfessorEntries(
+            entries
+          );
+
+
+        return grouped.map(
+          (
+            group,
+            index
+          ) => (
+
+            <div
+              key={index}
+              className="multi-entry"
+            >
+
+              <strong>
+
+                {group.course}
+
+              </strong>
+
+
+              {' - '}
+
+
+              {group.classes}
+
+
+              {' - '}
+
+
+              {group.room}
+
+            </div>
+
+          )
+        );
+
+      }
+
+
+      /* =================================================
+         CLASSES
+         Exemple :
+         MAT6 - SIC - F12
+      ================================================= */
+
+      if (
+        scheduleType ===
+        'classes'
+      ) {
+
+        return entries.map(
+          (
+            entry,
+            index
+          ) => (
+
+            <div
+              key={index}
+              className="multi-entry"
+            >
+
+              <strong>
+
+                {entry.course}
+
+              </strong>
+
+
+              {' - '}
+
+
+              {entry.professorName}
+
+
+              {' - '}
+
+
+              {entry.room}
+
+            </div>
+
+          )
+        );
+
+      }
+
+
+      return null;
+
+    };
+
+
+  /* =======================================================
+     TITRE DE L'IMPRESSION
+  ======================================================= */
+
+  let title =
+    'Impression de la selection';
+
+
+  if (
+    scheduleType ===
+    'professors'
+  ) {
+
+    title =
+      'Horaires des professeurs selectionnes';
+
+  }
+
+
+  if (
+    scheduleType ===
+    'classes'
+  ) {
+
+    title =
+      'Horaires des classes selectionnees';
+
+  }
+
+
+  /* =======================================================
+     TABLEAU MULTIPLE
+  ======================================================= */
+
+  return (
+
+    <div
+      id="multi-print-area"
+      className="multi-print-area"
+    >
+
+
+      <h1 className="multi-print-title">
+
+        {title}
+
+      </h1>
+
+
+      <table className="multi-print-table">
+
+
+        <thead>
+
+          <tr>
+
+
+            <th className="multi-time-column">
+
+              Jour / Heure
+
+            </th>
+
+
+            {selectedEntities.map(
+              (entity) => (
+
+                <th
+                  key={entity}
+                >
+
+                  {entity}
+
+                </th>
+
+              )
+            )}
+
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+
+          {DAYS_OF_WEEK.map(
+            (day) => (
+
+              <React.Fragment
+                key={day}
+              >
+
+
+                {HOURS_OF_DAY.map(
+                  (
+                    hour,
+                    hourIndex
+                  ) => (
+
+                    <tr
+                      key={
+                        day +
+                        '-' +
+                        hour
+                      }
+                      className={
+                        hourIndex === 0
+                          ? 'multi-first-row-of-day'
+                          : ''
+                      }
+                    >
+
+
+                      <td className="multi-slot">
+
+
+                        {hourIndex === 0 && (
+
+                          <div className="multi-day-name">
+
+                            {DAY_MAP[day]}
+
+                          </div>
+
+                        )}
+
+
+                        <div className="multi-hour-name">
+
+                          {HOUR_MAP[hour]}
+
+                        </div>
+
+
+                      </td>
+
+
+                      {selectedEntities.map(
+                        (entity) => (
+
+                          <td
+                            key={
+                              entity +
+                              '-' +
+                              day +
+                              '-' +
+                              hour
+                            }
+                          >
+
+                            {renderCompactCell(
+
+                              getEntriesForSlot(
+                                entity,
+                                day,
+                                hour
+                              )
+
+                            )}
+
+                          </td>
+
+                        )
+                      )}
+
+
+                    </tr>
+
+                  )
+                )}
+
+
+              </React.Fragment>
+
+            )
+          )}
+
+
+        </tbody>
+
+
+      </table>
+
+
+    </div>
+
+  );
+
+};
+
+
+/* =========================================================
    APPLICATION
 ========================================================= */
 
 function App() {
 
-  const [professorHours, setProfessorHours] =
+
+  const [
+    professorHours,
+    setProfessorHours
+  ] =
     useState({});
 
 
-  const [allSchedules, setAllSchedules] =
+  const [
+    allSchedules,
+    setAllSchedules
+  ] =
     useState({
+
       professors: {},
+
       classes: {},
+
       rooms: {}
+
     });
 
 
-  const [loading, setLoading] =
+  const [
+    loading,
+    setLoading
+  ] =
     useState(true);
 
 
-  const [error, setError] =
+  const [
+    error,
+    setError
+  ] =
     useState(null);
 
 
-  const [activeTab, setActiveTab] =
-    useState('professors');
-
-
-  const [selectedEntity, setSelectedEntity] =
-    useState(null);
-
-
-  const [isModalOpen, setIsModalOpen] =
-    useState(false);
-
-
-  const [fileName, setFileName] =
+  const [
+    activeTab,
+    setActiveTab
+  ] =
     useState(
-      'Aucun fichier sélectionné'
+      'professors'
     );
 
 
-  const [db, setDb] =
+  const [
+    selectedEntity,
+    setSelectedEntity
+  ] =
     useState(null);
 
 
-  const [isAuthReady, setIsAuthReady] =
+  const [
+    isModalOpen,
+    setIsModalOpen
+  ] =
     useState(false);
 
 
-  const [showAdminPanel, setShowAdminPanel] =
-    useState(false);
+  const [
+    fileName,
+    setFileName
+  ] =
+    useState(
+      'Aucun fichier selectionne'
+    );
 
 
-  const [showLogin, setShowLogin] =
-    useState(false);
-
-
-  const [adminEmail, setAdminEmail] =
-    useState('');
-
-
-  const [adminPassword, setAdminPassword] =
-    useState('');
-
-
-  const [adminUser, setAdminUser] =
+  const [
+    db,
+    setDb
+  ] =
     useState(null);
 
 
-  const [loginError, setLoginError] =
+  const [
+    isAuthReady,
+    setIsAuthReady
+  ] =
+    useState(false);
+
+
+  const [
+    showAdminPanel,
+    setShowAdminPanel
+  ] =
+    useState(false);
+
+
+  const [
+    showLogin,
+    setShowLogin
+  ] =
+    useState(false);
+
+
+  const [
+    adminEmail,
+    setAdminEmail
+  ] =
     useState('');
 
 
-  const [importing, setImporting] =
+  const [
+    adminPassword,
+    setAdminPassword
+  ] =
+    useState('');
+
+
+  const [
+    adminUser,
+    setAdminUser
+  ] =
+    useState(null);
+
+
+  const [
+    loginError,
+    setLoginError
+  ] =
+    useState('');
+
+
+  const [
+    importing,
+    setImporting
+  ] =
+    useState(false);
+
+
+  /* =======================================================
+     NOUVEAU :
+     SELECTION MULTIPLE POUR L'IMPRESSION
+  ======================================================= */
+
+  const [
+    selectedForPrint,
+    setSelectedForPrint
+  ] =
+    useState({
+
+      professors: [],
+
+      classes: []
+
+    });
+
+
+  const [
+    showMultiPrint,
+    setShowMultiPrint
+  ] =
     useState(false);
 
 
@@ -974,28 +1364,45 @@ function App() {
 
   useEffect(() => {
 
+
     try {
 
+
       const configText =
+
         typeof process.env.REACT_APP_FIREBASE_CONFIG !==
         'undefined'
+
           ? process.env.REACT_APP_FIREBASE_CONFIG
+
           : '{}';
 
 
       const firebaseConfig =
-        JSON.parse(configText);
+
+        JSON.parse(
+          configText
+        );
 
 
       if (
-        Object.keys(firebaseConfig).length === 0
+        Object.keys(
+          firebaseConfig
+        ).length === 0
       ) {
 
+
         setError(
-          'Erreur de configuration de la base de données.'
+
+          'Erreur de configuration de la base de donnees.'
+
         );
 
-        setLoading(false);
+
+        setLoading(
+          false
+        );
+
 
         return;
 
@@ -1003,15 +1410,24 @@ function App() {
 
 
       const app =
-        initializeApp(firebaseConfig);
+
+        initializeApp(
+          firebaseConfig
+        );
 
 
       const authInstance =
-        getAuth(app);
+
+        getAuth(
+          app
+        );
 
 
       const firestoreInstance =
-        getFirestore(app);
+
+        getFirestore(
+          app
+        );
 
 
       setDb(
@@ -1020,90 +1436,823 @@ function App() {
 
 
       const unsubscribeAuth =
+
         onAuthStateChanged(
+
           authInstance,
+
           (user) => {
 
-            setIsAuthReady(true);
+
+            setIsAuthReady(
+              true
+            );
 
 
             if (
+
               user &&
+
               !user.isAnonymous &&
+
               user.email &&
+
               ADMIN_EMAILS.includes(
+
                 user.email.toLowerCase()
+
               )
+
             ) {
 
-              setAdminUser(user);
+
+              setAdminUser(
+                user
+              );
+
 
             } else {
 
-              setAdminUser(null);
+
+              setAdminUser(
+                null
+              );
 
             }
+
+
+          }
+
+        );
+
+
+      if (
+
+        typeof __initial_auth_token !==
+        'undefined' &&
+
+        __initial_auth_token
+
+      ) {
+
+
+        signInWithCustomToken(
+
+          authInstance,
+
+          __initial_auth_token
+
+        ).catch(
+          () => {
+
+
+            signInAnonymously(
+              authInstance
+            );
+
 
           }
         );
 
 
-      if (
-        typeof __initial_auth_token !==
-        'undefined' &&
-        __initial_auth_token
-      ) {
-
-        signInWithCustomToken(
-          authInstance,
-          __initial_auth_token
-        ).catch(() => {
-
-          signInAnonymously(
-            authInstance
-          );
-
-        });
-
       } else {
+
 
         signInAnonymously(
           authInstance
         );
+
 
       }
 
 
       return () => {
 
+
         unsubscribeAuth();
 
+
       };
+
+
+    } catch (err) {
+
+
+      console.error(
+        err
+      );
+
+
+      setError(
+
+        'Erreur d initialisation.'
+
+      );
+
+
+      setLoading(
+        false
+      );
+
+
+    }
+
+
+  }, []);
+
+
+/* =======================================================
+   ECOUTE FIRESTORE
+======================================================= */
+
+useEffect(() => {
+
+
+  if (
+    !db ||
+    !isAuthReady
+  ) {
+
+    return;
+
+  }
+
+
+  setLoading(
+    true
+  );
+
+
+  const scheduleRef =
+
+    doc(
+
+      db,
+
+      'app_data',
+
+      'current_schedule'
+
+    );
+
+
+  const unsubscribe =
+
+    onSnapshot(
+
+      scheduleRef,
+
+
+      (docSnap) => {
+
+
+        if (
+          docSnap.exists()
+        ) {
+
+
+          const fileData =
+
+            docSnap.data();
+
+
+          if (
+            fileData.schedules
+          ) {
+
+
+            setAllSchedules(
+
+              fileData.schedules
+
+            );
+
+
+          }
+
+
+          if (
+            fileData.professorHours
+          ) {
+
+
+            setProfessorHours(
+
+              fileData.professorHours
+
+            );
+
+
+          }
+
+
+        }
+
+
+        setLoading(
+          false
+        );
+
+
+      },
+
+
+      (err) => {
+
+
+        console.error(
+          err
+        );
+
+
+        setError(
+
+          'Impossible de charger les plannings.'
+
+        );
+
+
+        setLoading(
+          false
+        );
+
+
+      }
+
+    );
+
+
+  return () => {
+
+
+    unsubscribe();
+
+
+  };
+
+
+}, [
+  db,
+  isAuthReady
+]);
+/* =======================================================
+   CONNEXION ADMINISTRATEUR
+======================================================= */
+
+const handleAdminLogin =
+  async (event) => {
+
+    event.preventDefault();
+
+    setLoginError('');
+
+
+    const email =
+      adminEmail
+        .trim()
+        .toLowerCase();
+
+
+    if (
+      !ADMIN_EMAILS.includes(email)
+    ) {
+
+      setLoginError(
+        'Cette adresse e-mail n est pas autorisee.'
+      );
+
+      return;
+    }
+
+
+    if (
+      !adminPassword
+    ) {
+
+      setLoginError(
+        'Veuillez entrer votre mot de passe.'
+      );
+
+      return;
+    }
+
+
+    try {
+
+      const authInstance =
+        getAuth();
+
+
+      const credential =
+        await signInWithEmailAndPassword(
+          authInstance,
+          email,
+          adminPassword
+        );
+
+
+      const connectedEmail =
+        credential.user.email
+          ? credential.user.email.toLowerCase()
+          : '';
+
+
+      if (
+        !ADMIN_EMAILS.includes(
+          connectedEmail
+        )
+      ) {
+
+        await signOut(
+          authInstance
+        );
+
+
+        setLoginError(
+          'Ce compte n est pas autorise a administrer les horaires.'
+        );
+
+        return;
+      }
+
+
+      setAdminUser(
+        credential.user
+      );
+
+
+      setAdminEmail('');
+
+      setAdminPassword('');
+
+      setLoginError('');
+
+      setShowLogin(false);
+
+      setShowAdminPanel(true);
+
+
+    } catch (err) {
+
+      console.error(err);
+
+      setLoginError(
+        'Adresse e-mail ou mot de passe incorrect.'
+      );
+
+    }
+
+  };
+
+
+/* =======================================================
+   DECONNEXION
+======================================================= */
+
+const handleAdminLogout =
+  async () => {
+
+    try {
+
+      const authInstance =
+        getAuth();
+
+
+      await signOut(
+        authInstance
+      );
+
+
+      setAdminUser(null);
+
+      setShowAdminPanel(false);
+
+
+      await signInAnonymously(
+        authInstance
+      );
+
 
     } catch (err) {
 
       console.error(err);
 
       setError(
-        'Erreur d’initialisation.'
+        'Erreur lors de la deconnexion.'
       );
-
-      setLoading(false);
 
     }
 
-  }, []);
+  };
 
 
-  /* =======================================================
-     ÉCOUTE FIRESTORE
-  ======================================================= */
+/* =======================================================
+   OUVERTURE ADMINISTRATION
+======================================================= */
 
-  useEffect(() => {
+const handleSecretClick =
+  () => {
 
     if (
+      adminUser
+    ) {
+
+      setShowAdminPanel(true);
+
+      return;
+
+    }
+
+
+    setLoginError('');
+
+    setAdminEmail('');
+
+    setAdminPassword('');
+
+    setShowLogin(true);
+
+  };
+
+
+/* =======================================================
+   IMPORT DU FICHIER GPU001.TXT
+======================================================= */
+
+const handleFileUpload =
+  (event) => {
+
+    const file =
+      event.target.files &&
+      event.target.files[0];
+
+
+    if (
+      !file ||
       !db ||
-      !isAuthReady
+      !adminUser
+    ) {
+
+      return;
+    }
+
+
+    setFileName(
+      file.name
+    );
+
+
+    setImporting(true);
+
+    setError(null);
+
+
+    const reader =
+      new FileReader();
+
+
+    reader.onload =
+      async (e) => {
+
+        try {
+
+          const textContent =
+            e.target.result;
+
+
+          const schedules = {
+
+            professors: {},
+
+            classes: {},
+
+            rooms: {}
+
+          };
+
+
+          const profHoursCounter =
+            {};
+
+
+          const lines =
+            textContent.split(
+              /\r?\n/
+            );
+
+
+          let importedLines = 0;
+
+          let ignoredLines = 0;
+
+
+          lines.forEach(
+            (line) => {
+
+              if (
+                !line.trim()
+              ) {
+
+                return;
+
+              }
+
+
+              const columns =
+                line.split(',');
+
+
+              if (
+                columns.length < 7
+              ) {
+
+                ignoredLines++;
+
+                return;
+
+              }
+
+
+              const className =
+                cleanField(
+                  columns[1]
+                ) ||
+                'Classe inconnue';
+
+
+              const profSigle =
+                cleanField(
+                  columns[2]
+                ) ||
+                UNKNOWN_PROFESSOR_KEY;
+
+
+              const course =
+                cleanField(
+                  columns[3]
+                ) ||
+                'Cours inconnu';
+
+
+              const room =
+                cleanField(
+                  columns[4]
+                ) ||
+                'N/A';
+
+
+              const day =
+                cleanField(
+                  columns[5]
+                );
+
+
+              const hour =
+                cleanField(
+                  columns[6]
+                );
+
+
+              if (
+                !day ||
+                !hour
+              ) {
+
+                ignoredLines++;
+
+                return;
+
+              }
+
+
+              const entry = {
+
+                day: day,
+
+                hour: hour,
+
+                class: className,
+
+                professorName:
+                  profSigle,
+
+                course: course,
+
+                room: room
+
+              };
+
+
+              if (
+                !schedules.professors[
+                  profSigle
+                ]
+              ) {
+
+                schedules.professors[
+                  profSigle
+                ] = [];
+
+              }
+
+
+              schedules.professors[
+                profSigle
+              ].push(
+                entry
+              );
+
+
+              if (
+                !schedules.classes[
+                  className
+                ]
+              ) {
+
+                schedules.classes[
+                  className
+                ] = [];
+
+              }
+
+
+              schedules.classes[
+                className
+              ].push(
+                entry
+              );
+
+
+              if (
+                !schedules.rooms[
+                  room
+                ]
+              ) {
+
+                schedules.rooms[
+                  room
+                ] = [];
+
+              }
+
+
+              schedules.rooms[
+                room
+              ].push(
+                entry
+              );
+
+
+              profHoursCounter[
+                profSigle
+              ] =
+                (
+                  profHoursCounter[
+                    profSigle
+                  ] || 0
+                ) + 1;
+
+
+              importedLines++;
+
+            }
+          );
+
+
+          if (
+            importedLines === 0
+          ) {
+
+            throw new Error(
+              'Aucune ligne valide trouvee dans le fichier.'
+            );
+
+          }
+
+
+          await setDoc(
+
+            doc(
+              db,
+              'app_data',
+              'current_schedule'
+            ),
+
+            {
+
+              schedules:
+                convertSetsToArrays(
+                  schedules
+                ),
+
+              professorHours:
+                profHoursCounter,
+
+              updatedAt:
+                new Date().toISOString()
+
+            }
+
+          );
+
+
+          let message =
+            'Fichier importe avec succes ! ';
+
+
+          message +=
+            importedLines +
+            ' lignes importees.';
+
+
+          if (
+            ignoredLines > 0
+          ) {
+
+            message +=
+              ' ' +
+              ignoredLines +
+              ' lignes ignorees.';
+
+          }
+
+
+          alert(message);
+
+
+        } catch (err) {
+
+          console.error(err);
+
+          setError(
+            'Erreur lors de l import : ' +
+            (
+              err.message ||
+              'format du fichier incorrect.'
+            )
+          );
+
+
+        } finally {
+
+          setImporting(false);
+
+        }
+
+      };
+
+
+    reader.onerror =
+      () => {
+
+        setError(
+          'Impossible de lire le fichier.'
+        );
+
+        setImporting(false);
+
+      };
+
+
+    reader.readAsText(
+      file
+    );
+
+  };
+
+
+/* =======================================================
+   ENTITES COURANTES
+======================================================= */
+
+const currentEntities =
+  Object.keys(
+    allSchedules[
+      activeTab
+    ] || {}
+  ).sort();
+
+
+/* =======================================================
+   SELECTION COURANTE
+======================================================= */
+
+const currentSelection =
+  selectedForPrint[
+    activeTab
+  ] || [];
+
+
+/* =======================================================
+   AJOUT / RETRAIT D'UNE ENTITE
+======================================================= */
+
+const toggleSelection =
+  (entity) => {
+
+    if (
+      activeTab !== 'professors' &&
+      activeTab !== 'classes'
     ) {
 
       return;
@@ -1111,648 +2260,333 @@ function App() {
     }
 
 
-    setLoading(true);
+    setSelectedForPrint(
+      (previous) => {
 
-
-    const scheduleRef =
-      doc(
-        db,
-        'app_data',
-        'current_schedule'
-      );
-
-
-    const unsubscribe =
-      onSnapshot(
-        scheduleRef,
-
-        (docSnap) => {
-
-          if (
-            docSnap.exists()
-          ) {
-
-            const fileData =
-              docSnap.data();
-
-
-            if (
-              fileData.schedules
-            ) {
-
-              setAllSchedules(
-                fileData.schedules
-              );
-
-            }
-
-
-            if (
-              fileData.professorHours
-            ) {
-
-              setProfessorHours(
-                fileData.professorHours
-              );
-
-            }
-
-          }
-
-
-          setLoading(false);
-
-        },
-
-
-        (err) => {
-
-          console.error(err);
-
-          setError(
-            'Impossible de charger les plannings.'
-          );
-
-          setLoading(false);
-
-        }
-
-      );
-
-
-    return () => {
-
-      unsubscribe();
-
-    };
-
-  }, [
-    db,
-    isAuthReady
-  ]);
-
-
-  /* =======================================================
-     CONNEXION ADMINISTRATEUR
-  ======================================================= */
-
-  const handleAdminLogin =
-    async (event) => {
-
-      event.preventDefault();
-
-      setLoginError('');
-
-
-      const email =
-        adminEmail
-          .trim()
-          .toLowerCase();
-
-
-      if (
-        !ADMIN_EMAILS.includes(email)
-      ) {
-
-        setLoginError(
-          'Cette adresse e-mail n’est pas autorisée.'
-        );
-
-        return;
-
-      }
-
-
-      if (
-        !adminPassword
-      ) {
-
-        setLoginError(
-          'Veuillez entrer votre mot de passe.'
-        );
-
-        return;
-
-      }
-
-
-      try {
-
-        const authInstance =
-          getAuth();
-
-
-        const credential =
-          await signInWithEmailAndPassword(
-            authInstance,
-            email,
-            adminPassword
-          );
-
-
-        const connectedEmail =
-          credential.user.email
-            ? credential.user.email.toLowerCase()
-            : '';
+        const current =
+          previous[
+            activeTab
+          ] || [];
 
 
         if (
-          !ADMIN_EMAILS.includes(
-            connectedEmail
+          current.includes(
+            entity
           )
         ) {
 
-          await signOut(
-            authInstance
-          );
+          return {
 
+            ...previous,
 
-          setLoginError(
-            'Ce compte n’est pas autorisé à administrer les horaires.'
-          );
+            [activeTab]:
+              current.filter(
+                (item) =>
+                  item !== entity
+              )
 
-          return;
+          };
 
         }
 
 
-        setAdminUser(
-          credential.user
-        );
-
-
-        setAdminEmail('');
-
-        setAdminPassword('');
-
-        setLoginError('');
-
-        setShowLogin(false);
-
-        setShowAdminPanel(true);
-
-      } catch (err) {
-
-        console.error(err);
-
-        setLoginError(
-          'Adresse e-mail ou mot de passe incorrect.'
-        );
-
-      }
-
-    };
-
-
-  /* =======================================================
-     DÉCONNEXION
-  ======================================================= */
-
-  const handleAdminLogout =
-    async () => {
-
-      try {
-
-        const authInstance =
-          getAuth();
-
-
-        await signOut(
-          authInstance
-        );
-
-
-        setAdminUser(null);
-
-        setShowAdminPanel(false);
-
-
-        await signInAnonymously(
-          authInstance
-        );
-
-      } catch (err) {
-
-        console.error(err);
-
-        setError(
-          'Erreur lors de la déconnexion.'
-        );
-
-      }
-
-    };
-
-
-  /* =======================================================
-     OUVERTURE ADMINISTRATION
-  ======================================================= */
-
-  const handleSecretClick =
-    () => {
-
-      if (
-        adminUser
-      ) {
-
-        setShowAdminPanel(true);
-
-        return;
-
-      }
-
-
-      setLoginError('');
-
-      setAdminEmail('');
-
-      setAdminPassword('');
-
-      setShowLogin(true);
-
-    };
-
-
-  /* =======================================================
-     IMPORT DU FICHIER GPU001.TXT
-  ======================================================= */
-
-  const handleFileUpload =
-    (event) => {
-
-      const file =
-        event.target.files &&
-        event.target.files[0];
-
-
-      if (
-        !file ||
-        !db ||
-        !adminUser
-      ) {
-
-        return;
-
-      }
-
-
-      setFileName(
-        file.name
-      );
-
-
-      setImporting(true);
-
-      setError(null);
-
-
-      const reader =
-        new FileReader();
-
-
-      reader.onload =
-        async (e) => {
-
-          try {
-
-            const textContent =
-              e.target.result;
-
-
-            const schedules = {
-
-              professors: {},
-              classes: {},
-              rooms: {}
-
-            };
-
-
-            const profHoursCounter =
-              {};
-
-
-            const lines =
-              textContent.split(
-                /\r?\n/
-              );
-
-
-            let importedLines = 0;
-
-            let ignoredLines = 0;
-
-
-            lines.forEach(
-              (line) => {
-
-                if (
-                  !line.trim()
-                ) {
-
-                  return;
-
-                }
-
-
-                const columns =
-                  line.split(',');
-
-
-                if (
-                  columns.length < 7
-                ) {
-
-                  ignoredLines++;
-
-                  return;
-
-                }
-
-
-                const className =
-                  cleanField(
-                    columns[1]
-                  ) ||
-                  'Classe inconnue';
-
-
-                const profSigle =
-                  cleanField(
-                    columns[2]
-                  ) ||
-                  UNKNOWN_PROFESSOR_KEY;
-
-
-                const course =
-                  cleanField(
-                    columns[3]
-                  ) ||
-                  'Cours inconnu';
-
-
-                const room =
-                  cleanField(
-                    columns[4]
-                  ) ||
-                  'N/A';
-
-
-                const day =
-                  cleanField(
-                    columns[5]
-                  );
-
-
-                const hour =
-                  cleanField(
-                    columns[6]
-                  );
-
-
-                if (
-                  !day ||
-                  !hour
-                ) {
-
-                  ignoredLines++;
-
-                  return;
-
-                }
-
-
-                const entry = {
-
-                  day: day,
-
-                  hour: hour,
-
-                  class: className,
-
-                  professorName:
-                    profSigle,
-
-                  course: course,
-
-                  room: room
-
-                };
-
-
-                /* PROFESSEURS */
-
-                if (
-                  !schedules.professors[
-                    profSigle
-                  ]
-                ) {
-
-                  schedules.professors[
-                    profSigle
-                  ] = [];
-
-                }
-
-
-                schedules.professors[
-                  profSigle
-                ].push(
-                  entry
-                );
-
-
-                /* CLASSES */
-
-                if (
-                  !schedules.classes[
-                    className
-                  ]
-                ) {
-
-                  schedules.classes[
-                    className
-                  ] = [];
-
-                }
-
-
-                schedules.classes[
-                  className
-                ].push(
-                  entry
-                );
-
-
-                /* LOCAUX */
-
-                if (
-                  !schedules.rooms[
-                    room
-                  ]
-                ) {
-
-                  schedules.rooms[
-                    room
-                  ] = [];
-
-                }
-
-
-                schedules.rooms[
-                  room
-                ].push(
-                  entry
-                );
-
-
-                /* HEURES PROFESSEURS */
-
-                profHoursCounter[
-                  profSigle
-                ] =
-                  (
-                    profHoursCounter[
-                      profSigle
-                    ] || 0
-                  ) + 1;
-
-
-                importedLines++;
-
-              }
-            );
-
-
-            if (
-              importedLines === 0
-            ) {
-
-              throw new Error(
-                'Aucune ligne valide trouvée dans le fichier.'
-              );
-
-            }
-
-
-            await setDoc(
-
-              doc(
-                db,
-                'app_data',
-                'current_schedule'
-              ),
-
-              {
-
-                schedules:
-                  convertSetsToArrays(
-                    schedules
-                  ),
-
-                professorHours:
-                  profHoursCounter,
-
-                updatedAt:
-                  new Date().toISOString()
-
-              }
-
-            );
-
-
-            let message =
-              'Fichier importé avec succès ! ';
-
-
-            message +=
-              importedLines +
-              ' lignes importées.';
-
-
-            if (
-              ignoredLines > 0
-            ) {
-
-              message +=
-                ' ' +
-                ignoredLines +
-                ' lignes ignorées.';
-
-            }
-
-
-            alert(message);
-
-
-          } catch (err) {
-
-            console.error(err);
-
-            setError(
-              'Erreur lors de l’import : ' +
-              (
-                err.message ||
-                'format du fichier incorrect.'
-              )
-            );
-
-          } finally {
-
-            setImporting(false);
-
-          }
+        return {
+
+          ...previous,
+
+          [activeTab]:
+            [
+              ...current,
+              entity
+            ]
 
         };
 
-
-      reader.onerror =
-        () => {
-
-          setError(
-            'Impossible de lire le fichier.'
-          );
-
-          setImporting(false);
-
-        };
-
-
-      reader.readAsText(
-        file
-      );
-
-    };
-
-
-  /* =======================================================
-     CHARGEMENT
-  ======================================================= */
-
-  if (
-    loading
-  ) {
-
-    return (
-
-      <div className="flex items-center justify-center h-screen">
-
-        <p>
-          Chargement des horaires...
-        </p>
-
-      </div>
-
+      }
     );
 
-  }
+  };
 
 
-  /* =======================================================
-     INTERFACE PRINCIPALE
-  ======================================================= */
+/* =======================================================
+   TOUT SELECTIONNER
+======================================================= */
+
+const selectAll =
+  () => {
+
+    if (
+      activeTab !== 'professors' &&
+      activeTab !== 'classes'
+    ) {
+
+      return;
+
+    }
+
+
+    setSelectedForPrint(
+      (previous) => ({
+
+        ...previous,
+
+        [activeTab]:
+          currentEntities
+
+      })
+    );
+
+  };
+
+
+/* =======================================================
+   TOUT DESELECTIONNER
+======================================================= */
+
+const clearSelection =
+  () => {
+
+    if (
+      activeTab !== 'professors' &&
+      activeTab !== 'classes'
+    ) {
+
+      return;
+
+    }
+
+
+    setSelectedForPrint(
+      (previous) => ({
+
+        ...previous,
+
+        [activeTab]:
+          []
+
+      })
+    );
+
+  };
+
+
+/* =======================================================
+   IMPRESSION MULTIPLE
+======================================================= */
+
+const handleMultiPrint =
+  () => {
+
+    if (
+      currentSelection.length === 0
+    ) {
+
+      alert(
+        'Selectionnez au moins un element.'
+      );
+
+      return;
+
+    }
+
+
+    setShowMultiPrint(
+      true
+    );
+
+
+    setTimeout(
+      () => {
+
+        window.print();
+
+      },
+      250
+    );
+
+  };
+
+
+/* =======================================================
+   FIN DE L'IMPRESSION
+======================================================= */
+
+useEffect(() => {
+
+  const afterPrint =
+    () => {
+
+      setShowMultiPrint(
+        false
+      );
+
+    };
+
+
+  window.addEventListener(
+    'afterprint',
+    afterPrint
+  );
+
+
+  return () => {
+
+    window.removeEventListener(
+      'afterprint',
+      afterPrint
+    );
+
+  };
+
+}, []);
+
+
+/* =======================================================
+   CHARGEMENT
+======================================================= */
+
+if (
+  loading
+) {
 
   return (
+
+    <div className="flex items-center justify-center h-screen">
+
+      <p>
+        Chargement des horaires...
+      </p>
+
+    </div>
+
+  );
+
+}
+
+
+/* =======================================================
+   INTERFACE PRINCIPALE
+======================================================= */
+
+return (
+
+  <>
+
+    <style>{`
+
+      @media print {
+
+        @page {
+          size: A4 landscape;
+          margin: 7mm;
+        }
+
+        body {
+          background: white !important;
+        }
+
+        body * {
+          visibility: hidden;
+        }
+
+        #multi-print-area,
+        #multi-print-area * {
+          visibility: visible;
+        }
+
+        #multi-print-area {
+          display: block !important;
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          background: white;
+        }
+
+        .multi-print-title {
+          font-size: 16pt;
+          text-align: center;
+          font-weight: bold;
+          margin: 0 0 5mm 0;
+        }
+
+        .multi-print-table {
+          width: 100%;
+          border-collapse: collapse;
+          table-layout: fixed;
+          font-size: 7.5pt;
+        }
+
+        .multi-print-table th,
+        .multi-print-table td {
+          border: 1px solid #777;
+          padding: 1.5mm;
+          vertical-align: top;
+        }
+
+        .multi-print-table th {
+          background: #eeeeee !important;
+          font-weight: bold;
+          text-align: center;
+        }
+
+        .multi-time-column {
+          width: 28mm;
+        }
+
+        .multi-slot {
+          font-weight: normal;
+          background: #f8f8f8 !important;
+        }
+
+        .multi-day-name {
+          font-weight: bold;
+          font-size: 8pt;
+          margin-bottom: 1mm;
+        }
+
+        .multi-hour-name {
+          font-size: 7pt;
+        }
+
+        .multi-entry {
+          line-height: 1.15;
+          margin-bottom: 0.5mm;
+        }
+
+        .multi-empty {
+          color: #999;
+        }
+
+        .multi-first-row-of-day td {
+          border-top-width: 2px;
+        }
+
+      }
+
+    `}</style>
+
+
+    {showMultiPrint && (
+
+      <MultiPrintView
+
+        scheduleType={
+          activeTab
+        }
+
+        selectedEntities={
+          currentSelection
+        }
+
+        allSchedules={
+          allSchedules
+        }
+
+      />
+
+    )}
+
 
     <div className="min-h-screen bg-gray-50 p-3 sm:p-6">
 
@@ -1776,16 +2610,12 @@ function App() {
 
           <p className="text-sm text-gray-500 mt-1">
 
-            Application synchronisée
+            Application synchronisee
 
           </p>
 
         </div>
 
-
-        {/* =================================================
-            CONNEXION ADMINISTRATEUR
-        ================================================= */}
 
         {showLogin && (
 
@@ -1893,10 +2723,6 @@ function App() {
         )}
 
 
-        {/* =================================================
-            PANNEAU ADMINISTRATEUR
-        ================================================= */}
-
         {showAdminPanel &&
           adminUser && (
 
@@ -1918,7 +2744,7 @@ function App() {
                   className="text-gray-500 hover:text-gray-700 text-xs"
                 >
 
-                  Déconnexion
+                  Deconnexion
 
                 </button>
 
@@ -1927,7 +2753,7 @@ function App() {
 
               <p className="text-xs text-green-700 mb-3">
 
-                Connecté :{' '}
+                Connecte :{' '}
 
                 {adminUser.email}
 
@@ -1940,7 +2766,9 @@ function App() {
                 onChange={
                   handleFileUpload
                 }
-                disabled={importing}
+                disabled={
+                  importing
+                }
                 className="block w-full text-xs cursor-pointer"
               />
 
@@ -1971,10 +2799,6 @@ function App() {
       </header>
 
 
-      {/* =====================================================
-          ERREUR
-      ===================================================== */}
-
       {error && (
 
         <div className="max-w-6xl mx-auto bg-red-100 text-red-700 px-4 py-3 rounded mb-4">
@@ -1986,118 +2810,250 @@ function App() {
       )}
 
 
-      {/* =====================================================
-          CONTENU
-      ===================================================== */}
-
       <main className="max-w-6xl mx-auto bg-white rounded-lg shadow-sm p-3 sm:p-6">
 
 
-        {/* ONGlets */}
-
-        <div className="flex border-b border-gray-200 mb-5 sm:mb-6">
+        <div className="flex border-b border-gray-200 mb-4">
 
           {[
             'professors',
             'classes',
             'rooms'
-          ].map((tab) => (
-
-            <button
-              key={tab}
-              onClick={() =>
-                setActiveTab(tab)
-              }
-              className={
-                'py-2 px-3 sm:px-4 font-medium text-sm border-b-2 capitalize ' +
-                (
-                  activeTab === tab
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500'
-                )
-              }
-            >
-
-              {tab === 'professors'
-                ? 'Professeurs'
-                : tab === 'classes'
-                ? 'Classes'
-                : 'Locaux'}
-
-            </button>
-
-          ))}
-
-        </div>
-
-
-        {/* =================================================
-            LISTE DES ENTITÉS
-        ================================================= */}
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
-
-          {Object.keys(
-            allSchedules[
-              activeTab
-            ] || {}
-          )
-            .sort()
-            .map((entity) => (
+          ].map(
+            (tab) => (
 
               <button
-                key={entity}
-                onClick={() => {
-
-                  setSelectedEntity(
-                    entity
-                  );
-
-                  setIsModalOpen(
-                    true
-                  );
-
-                }}
-                className="p-3 text-center bg-gray-50 hover:bg-blue-50 active:bg-blue-100 border border-gray-200 rounded-lg font-medium text-gray-700 transition min-h-[58px]"
+                key={tab}
+                onClick={() =>
+                  setActiveTab(
+                    tab
+                  )
+                }
+                className={
+                  'py-2 px-3 sm:px-4 font-medium text-sm border-b-2 capitalize ' +
+                  (
+                    activeTab === tab
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500'
+                  )
+                }
               >
 
-                <span className="break-words">
-
-                  {entity}
-
-                </span>
-
-
-                {activeTab ===
-                  'professors' &&
-                  professorHours[
-                    entity
-                  ] && (
-
-                    <span className="block text-xs font-normal text-gray-400 mt-0.5">
-
-                      {professorHours[
-                        entity
-                      ]}{' '}
-
-                      h
-
-                    </span>
-
-                  )}
+                {tab === 'professors'
+                  ? 'Professeurs'
+                  : tab === 'classes'
+                  ? 'Classes'
+                  : 'Locaux'}
 
               </button>
 
-            ))}
+            )
+          )}
 
         </div>
 
+
+        {(activeTab === 'professors' ||
+          activeTab === 'classes') && (
+
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-gray-50 border border-gray-200 rounded-lg p-3 mb-5">
+
+
+            <div className="flex flex-wrap gap-2">
+
+              <button
+                onClick={
+                  selectAll
+                }
+                className="px-3 py-2 text-sm bg-white border border-gray-300 hover:bg-gray-100 rounded-lg"
+              >
+
+                Tout selectionner
+
+              </button>
+
+
+              <button
+                onClick={
+                  clearSelection
+                }
+                className="px-3 py-2 text-sm bg-white border border-gray-300 hover:bg-gray-100 rounded-lg"
+              >
+
+                Tout deselectionner
+
+              </button>
+
+            </div>
+
+
+            <div className="flex items-center gap-3">
+
+              <span className="text-sm text-gray-600">
+
+                {currentSelection.length}
+                {' '}
+                selectionne
+                {currentSelection.length > 1
+                  ? 's'
+                  : ''}
+
+              </span>
+
+
+              <button
+                onClick={
+                  handleMultiPrint
+                }
+                disabled={
+                  currentSelection.length === 0
+                }
+                className={
+                  'px-4 py-2 rounded-lg font-semibold text-sm ' +
+                  (
+                    currentSelection.length > 0
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  )
+                }
+              >
+
+                Imprimer la selection
+
+              </button>
+
+            </div>
+
+          </div>
+
+        )}
+
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
+
+
+          {currentEntities.map(
+            (entity) => {
+
+
+              const selectable =
+
+                activeTab === 'professors' ||
+
+                activeTab === 'classes';
+
+
+              const checked =
+
+                selectable &&
+
+                currentSelection.includes(
+                  entity
+                );
+
+
+              return (
+
+                <div
+                  key={entity}
+                  className={
+                    'relative border rounded-lg transition ' +
+                    (
+                      checked
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 bg-gray-50'
+                    )
+                  }
+                >
+
+
+                  {selectable && (
+
+                    <label className="absolute top-2 left-2 z-10 cursor-pointer">
+
+                      <input
+                        type="checkbox"
+                        checked={
+                          checked
+                        }
+                        onChange={() =>
+                          toggleSelection(
+                            entity
+                          )
+                        }
+                        className="w-4 h-4 cursor-pointer"
+                      />
+
+                    </label>
+
+                  )}
+
+
+                  <button
+                    onClick={() => {
+
+                      setSelectedEntity(
+                        entity
+                      );
+
+                      setIsModalOpen(
+                        true
+                      );
+
+                    }}
+                    className={
+                      'w-full p-3 text-center hover:bg-blue-50 active:bg-blue-100 rounded-lg font-medium text-gray-700 transition min-h-[58px] ' +
+                      (
+                        selectable
+                          ? 'pt-8'
+                          : ''
+                      )
+                    }
+                  >
+
+
+                    <span className="break-words">
+
+                      {entity}
+
+                    </span>
+
+
+                    {activeTab ===
+                      'professors' &&
+                      professorHours[
+                        entity
+                      ] && (
+
+                        <span className="block text-xs font-normal text-gray-400 mt-0.5">
+
+                          {professorHours[
+                            entity
+                          ]}{' '}
+
+                          h
+
+                        </span>
+
+                      )}
+
+
+                  </button>
+
+
+                </div>
+
+              );
+
+            }
+          )}
+
+
+        </div>
+
+
       </main>
 
-
-      {/* =====================================================
-          FENÊTRE DE DÉTAIL
-      ===================================================== */}
 
       {isModalOpen &&
         selectedEntity && (
@@ -2136,11 +3092,15 @@ function App() {
 
         )}
 
+
     </div>
 
-  );
+
+  </>
+
+);
 
 }
 
 
-export default App;
+export default App;  
