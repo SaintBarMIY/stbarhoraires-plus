@@ -710,20 +710,30 @@ const ScheduleModal = ({
     }
 
     .multi-print-page {
-      width: 100%;
-      height: 289mm;
-      box-sizing: border-box;
+  width: 100%;
+  box-sizing: border-box;
 
-      page-break-after: always;
-      break-after: page;
+  break-before: page;
+  page-break-before: always;
 
-      overflow: hidden;
-    }
+  break-after: page;
+  page-break-after: always;
 
-    .multi-print-page:last-child {
-      page-break-after: auto;
-      break-after: auto;
-    }
+  break-inside: avoid;
+  page-break-inside: avoid;
+
+  overflow: visible !important;
+}
+
+.multi-print-page:first-child {
+  break-before: auto;
+  page-break-before: auto;
+}
+
+.multi-print-page:last-child {
+  break-after: auto;
+  page-break-after: auto;
+}
 
     .multi-print-header {
       height: 6mm;
