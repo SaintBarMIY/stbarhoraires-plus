@@ -336,45 +336,43 @@ const ScheduleModal = ({
           );
 
 
-        return grouped.map(
-          (
-            group,
-            index
-          ) => (
+      return (
 
-            <div
-              key={index}
-              className="schedule-cell schedule-cell-blue mb-1"
-            >
+  <div className="multi-entry">
 
-              <div className="font-bold text-blue-800 text-sm sm:text-base">
+    {grouped.map(
+      (group, index) => (
 
-                {group.course}
+        <React.Fragment key={index}>
 
-              </div>
+          {index > 0 && ' / '}
 
+          <strong>
+            {group.course}
+          </strong>
 
-              <div className="text-gray-700 text-xs mt-1">
+          {' '}
 
-                Classe :{' '}
+          {group.classes}
 
-                {group.classes}
+          {group.room &&
+            group.room !== 'N/A' && (
+              <>
+                {' '}
+                <span className="multi-room">
+                  {group.room}
+                </span>
+              </>
+            )}
 
-              </div>
+        </React.Fragment>
 
+      )
+    )}
 
-              <div className="text-gray-700 text-xs">
+  </div>
 
-                Local :{' '}
-
-                {group.room}
-
-              </div>
-
-            </div>
-
-          )
-        );
+);
 
       }
 
@@ -728,19 +726,19 @@ const ScheduleModal = ({
     }
 
     .multi-print-header {
-      height: 8mm;
+      height: 6mm;
 
       display: flex;
       align-items: center;
       justify-content: space-between;
 
-      margin-bottom: 1mm;
+      margin-bottom: 0,5mm;
     }
 
     .multi-print-header h1 {
       margin: 0;
 
-      font-size: 12pt;
+      font-size: 10pt;
       font-weight: bold;
     }
 
@@ -1129,7 +1127,13 @@ const MultiPrintView = ({
                       key={day}
                     >
 
-                      {HOURS_OF_DAY.map(
+                     {HOURS_OF_DAY
+  .filter(
+    (hour) =>
+      day !== '3' ||
+      Number(hour) <= 4
+  )
+  .map(
                         (
                           hour,
                           hourIndex
@@ -1153,8 +1157,10 @@ const MultiPrintView = ({
 
                               <td
                                 rowSpan={
-                                  HOURS_OF_DAY.length
-                                }
+  day === '3'
+    ? 4
+    : HOURS_OF_DAY.length
+}
                                 className="multi-day"
                               >
 
