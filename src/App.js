@@ -687,11 +687,6 @@ const ScheduleModal = ({
 
   @media print {
 
-    @page {
-      size: A4 portrait;
-      margin: 4mm;
-    }
-
     html,
     body {
       margin: 0 !important;
@@ -2538,8 +2533,8 @@ return (
       @media print {
 
         @page {
-          size: A4 landscape;
-          margin: 7mm;
+          size: A4 portrait;
+          margin: 4mm;
         }
 
         body {
