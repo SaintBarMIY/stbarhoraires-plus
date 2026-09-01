@@ -828,20 +828,31 @@ const MultiPrintView = ({
   allSchedules
 }) => {
 
-
   if (
     !selectedEntities ||
     selectedEntities.length === 0
   ) {
-
     return null;
-
   }
 
+  const MAX_PER_PAGE = 10;
 
-  /* =======================================================
-     RECHERCHE DU COURS POUR UN JOUR ET UNE HEURE
-  ======================================================= */
+  const pages = [];
+
+  for (
+    let i = 0;
+    i < selectedEntities.length;
+    i += MAX_PER_PAGE
+  ) {
+
+    pages.push(
+      selectedEntities.slice(
+        i,
+        i + MAX_PER_PAGE
+      )
+    );
+  }
+
 
   const getEntriesForSlot = (
     entity,
@@ -856,344 +867,335 @@ const MultiPrintView = ({
         entity
       ] || [];
 
-
     return entries.filter(
       (entry) =>
-
         String(entry.day) === day &&
-
         String(entry.hour) === hour
-
     );
-
   };
 
 
-  /* =======================================================
-     CONTENU COMPACT D'UNE CELLULE
-  ======================================================= */
+  const renderCompactCell = (
+    entries
+  ) => {
 
-  const renderCompactCell =
-    (entries) => {
-
-
-      if (
-        !entries ||
-        entries.length === 0
-      ) {
-
-        return (
-
-          <span className="multi-empty">
-
-            -
-
-          </span>
-
-        );
-
-      }
-
-
-      /* =================================================
-         PROFESSEURS
-         Exemple :
-         MAT6 - 6ABC - F12
-      ================================================= */
-
-      if (
-        scheduleType ===
-        'professors'
-      ) {
-
-        const grouped =
-          groupProfessorEntries(
-            entries
-          );
-
-
-        return grouped.map(
-          (
-            group,
-            index
-          ) => (
-
-            <div
-              key={index}
-              className="multi-entry"
-            >
-
-              <strong>
-
-                {group.course}
-
-              </strong>
-
-
-              {' - '}
-
-
-              {group.classes}
-
-
-              {' - '}
-
-
-              {group.room}
-
-            </div>
-
-          )
-        );
-
-      }
-
-
-      /* =================================================
-         CLASSES
-         Exemple :
-         MAT6 - SIC - F12
-      ================================================= */
-
-      if (
-        scheduleType ===
-        'classes'
-      ) {
-
-        return entries.map(
-          (
-            entry,
-            index
-          ) => (
-
-            <div
-              key={index}
-              className="multi-entry"
-            >
-
-              <strong>
-
-                {entry.course}
-
-              </strong>
-
-
-              {' - '}
-
-
-              {entry.professorName}
-
-
-              {' - '}
-
-
-              {entry.room}
-
-            </div>
-
-          )
-        );
-
-      }
-
-
+    if (
+      !entries ||
+      entries.length === 0
+    ) {
       return null;
+    }
 
-    };
+
+    if (
+      scheduleType === 'professors'
+    ) {
+
+      const grouped =
+        groupProfessorEntries(
+          entries
+        );
+
+      return grouped.map(
+        (group, index) => (
+
+          <div
+            key={index}
+            className="multi-entry"
+          >
+
+            <strong>
+              {group.course}
+            </strong>
+
+            {' '}
+
+            {group.classes}
+
+            {group.room &&
+              group.room !== 'N/A' && (
+                <>
+                  {' '}
+                  <span className="multi-room">
+                    {group.room}
+                  </span>
+                </>
+              )}
+
+          </div>
+
+        )
+      );
+    }
 
 
-  /* =======================================================
-     TITRE DE L'IMPRESSION
-  ======================================================= */
+    if (
+      scheduleType === 'classes'
+    ) {
+
+      return entries.map(
+        (entry, index) => (
+
+          <div
+            key={index}
+            className="multi-entry"
+          >
+
+            <strong>
+              {entry.course}
+            </strong>
+
+            {' '}
+
+            {entry.professorName}
+
+            {entry.room &&
+              entry.room !== 'N/A' && (
+                <>
+                  {' '}
+                  <span className="multi-room">
+                    {entry.room}
+                  </span>
+                </>
+              )}
+
+          </div>
+
+        )
+      );
+    }
+
+
+    if (
+      scheduleType === 'rooms'
+    ) {
+
+      return entries.map(
+        (entry, index) => (
+
+          <div
+            key={index}
+            className="multi-entry"
+          >
+
+            <strong>
+              {entry.course}
+            </strong>
+
+            {' '}
+
+            {entry.professorName}
+
+            {' '}
+
+            {entry.class}
+
+          </div>
+
+        )
+      );
+    }
+
+
+    return null;
+  };
+
 
   let title =
-    'Impression de la selection';
-
-
-  if (
-    scheduleType ===
-    'professors'
-  ) {
-
-    title =
-      'Horaires des professeurs selectionnes';
-
-  }
-
+    'Horaires sélectionnés';
 
   if (
-    scheduleType ===
-    'classes'
+    scheduleType === 'professors'
   ) {
-
     title =
-      'Horaires des classes selectionnees';
-
+      'Horaires des professeurs';
   }
 
+  if (
+    scheduleType === 'classes'
+  ) {
+    title =
+      'Horaires des classes';
+  }
 
-  /* =======================================================
-     TABLEAU MULTIPLE
-  ======================================================= */
+  if (
+    scheduleType === 'rooms'
+  ) {
+    title =
+      'Horaires des locaux';
+  }
+
 
   return (
 
-    <div
-      id="multi-print-area"
-      className="multi-print-area"
-    >
+    <div id="multi-print-area">
+
+      {pages.map(
+        (
+          pageEntities,
+          pageIndex
+        ) => (
+
+          <div
+            key={pageIndex}
+            className="multi-print-page"
+          >
+
+            <div className="multi-print-header">
+
+              <h1>
+                {title}
+              </h1>
+
+              {pages.length > 1 && (
+
+                <span>
+                  Page{' '}
+                  {pageIndex + 1}
+                  {' / '}
+                  {pages.length}
+                </span>
+
+              )}
+
+            </div>
 
 
-      <h1 className="multi-print-title">
+            <table className="multi-print-table">
 
-        {title}
+              <thead>
 
-      </h1>
+                <tr>
 
+                  <th className="multi-time-column">
+                    Jour
+                  </th>
 
-      <table className="multi-print-table">
-
-
-        <thead>
-
-          <tr>
-
-
-            <th className="multi-time-column">
-
-              Jour / Heure
-
-            </th>
+                  <th className="multi-hour-column">
+                    H
+                  </th>
 
 
-            {selectedEntities.map(
-              (entity) => (
+                  {pageEntities.map(
+                    (entity) => (
 
-                <th
-                  key={entity}
-                >
+                      <th key={entity}>
+                        {entity}
+                      </th>
 
-                  {entity}
+                    )
+                  )}
 
-                </th>
+                </tr>
 
-              )
-            )}
-
-
-          </tr>
-
-        </thead>
+              </thead>
 
 
-        <tbody>
+              <tbody>
 
+                {DAYS_OF_WEEK.map(
+                  (day) => (
 
-          {DAYS_OF_WEEK.map(
-            (day) => (
-
-              <React.Fragment
-                key={day}
-              >
-
-
-                {HOURS_OF_DAY.map(
-                  (
-                    hour,
-                    hourIndex
-                  ) => (
-
-                    <tr
-                      key={
-                        day +
-                        '-' +
-                        hour
-                      }
-                      className={
-                        hourIndex === 0
-                          ? 'multi-first-row-of-day'
-                          : ''
-                      }
+                    <React.Fragment
+                      key={day}
                     >
 
+                      {HOURS_OF_DAY.map(
+                        (
+                          hour,
+                          hourIndex
+                        ) => (
 
-                      <td className="multi-slot">
-
-
-                        {hourIndex === 0 && (
-
-                          <div className="multi-day-name">
-
-                            {DAY_MAP[day]}
-
-                          </div>
-
-                        )}
-
-
-                        <div className="multi-hour-name">
-
-                          {HOUR_MAP[hour]}
-
-                        </div>
-
-
-                      </td>
-
-
-                      {selectedEntities.map(
-                        (entity) => (
-
-                          <td
+                          <tr
                             key={
-                              entity +
-                              '-' +
                               day +
                               '-' +
                               hour
                             }
+                            className={
+                              hourIndex === 0
+                                ? 'first-hour-day'
+                                : ''
+                            }
                           >
 
-                            {renderCompactCell(
 
-                              getEntriesForSlot(
-                                entity,
-                                day,
-                                hour
-                              )
+                            {hourIndex === 0 && (
+
+                              <td
+                                rowSpan={
+                                  HOURS_OF_DAY.length
+                                }
+                                className="multi-day"
+                              >
+
+                                {DAY_MAP[day]}
+
+                              </td>
 
                             )}
 
-                          </td>
+
+                            <td className="multi-hour">
+
+                              {hour}
+
+                            </td>
+
+
+                            {pageEntities.map(
+                              (entity) => (
+
+                                <td
+                                  key={
+                                    entity +
+                                    '-' +
+                                    day +
+                                    '-' +
+                                    hour
+                                  }
+                                  className="multi-course-cell"
+                                >
+
+                                  {renderCompactCell(
+
+                                    getEntriesForSlot(
+                                      entity,
+                                      day,
+                                      hour
+                                    )
+
+                                  )}
+
+                                </td>
+
+                              )
+                            )}
+
+
+                          </tr>
 
                         )
                       )}
 
-
-                    </tr>
+                    </React.Fragment>
 
                   )
                 )}
 
+              </tbody>
 
-              </React.Fragment>
+            </table>
 
-            )
-          )}
+          </div>
 
-
-        </tbody>
-
-
-      </table>
-
+        )
+      )}
 
     </div>
 
   );
-
 };
-
 
 /* =========================================================
    APPLICATION
