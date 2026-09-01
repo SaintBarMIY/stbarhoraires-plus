@@ -7,7 +7,7 @@ import {
   getAuth,
   signInAnonymously,
   signInWithCustomToken,
-  onAuthStateChanged,
+  onAuthStateChanged,F
   signInWithEmailAndPassword,
   signOut
 } from 'firebase/auth';
@@ -813,19 +813,23 @@ const ScheduleModal = ({
 }
 
 .multi-course-cell {
-  height: 5.7mm;
-  padding: 0.25mm !important;
+  height: 5.5mm !important;
+  max-height: 5.5mm !important;
+  padding: 0.2mm !important;
   text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  vertical-align: middle !important;
 }
 
 .multi-entry {
-  margin: 0;
-  padding: 0;
-  line-height: 1;
-  white-space: nowrap;
-  font-size: 6pt;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  font-size: 5.5pt;
+  overflow: hidden !important;
+  text-overflow: clip;
 }
 
 
@@ -835,6 +839,10 @@ const ScheduleModal = ({
     }
 
   }
+  .multi-entry strong,
+.multi-entry span {
+  white-space: nowrap !important;
+}
 
 `}</style>
 
