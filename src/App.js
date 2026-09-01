@@ -784,77 +784,52 @@ const ScheduleModal = ({
 
     /* Colonne JOUR très étroite */
 
-    .multi-time-column {
-      width: 6mm;
-      padding: 0 !important;
-    }
+.multi-time-column {
+  width: 4mm;
+  padding: 0 !important;
+}
 
-    /* Colonne numéro de l'heure */
+.multi-hour-column {
+  width: 4mm;
+  padding: 0 !important;
+}
 
-    .multi-hour-column {
-      width: 6mm;
-      padding: 0 !important;
-    }
+.multi-day {
+  width: 4mm;
+  padding: 0 !important;
+  font-size: 5.5pt;
+  font-weight: bold;
+  text-align: center;
+  background: #f2f2f2 !important;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
 
-    .multi-day {
-      width: 6mm;
+.multi-hour {
+  width: 4mm;
+  padding: 0 !important;
+  font-size: 6pt;
+  font-weight: bold;
+  text-align: center;
+  background: #fafafa !important;
+}
 
-      padding: 0 !important;
+.multi-course-cell {
+  height: 5.7mm;
+  padding: 0.25mm !important;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+}
 
-      font-size: 6.5pt;
+.multi-entry {
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+  white-space: nowrap;
+  font-size: 6pt;
+}
 
-      font-weight: bold;
-
-      text-align: center;
-
-      background: #f2f2f2 !important;
-
-      writing-mode: vertical-rl;
-
-      transform: rotate(180deg);
-    }
-
-    .multi-hour {
-      width: 6mm;
-
-      padding: 0 !important;
-
-      font-size: 7pt;
-
-      font-weight: bold;
-
-      text-align: center;
-
-      background: #fafafa !important;
-    }
-
-    .multi-course-cell {
-      height: 6.1mm;
-
-      padding: 0.5mm !important;
-
-      text-align: center;
-
-      white-space: normal;
-
-      overflow: hidden;
-    }
-
-    .multi-entry {
-      margin: 0;
-
-      padding: 0;
-
-      line-height: 1.1;
-    }
-
-    .multi-entry strong {
-      font-weight: bold;
-    }
-
-    .multi-room {
-      font-size: 5.8pt;
-    }
 
     .first-hour-day td {
       border-top-width: 1.2pt;
