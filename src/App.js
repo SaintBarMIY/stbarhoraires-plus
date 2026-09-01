@@ -1101,85 +1101,78 @@ const MultiPrintView = ({
 
   return (
 
-    <div id="multi-print-area">
+<div id="multi-print-area">
 
-      {pages.map(
-        (
-          pageEntities,
-          pageIndex
-        ) => (
+  {pages.map(
+    (
+      pageEntities,
+      pageIndex
+    ) => (
 
-          <div
-            key={pageIndex}
-            className="multi-print-page"
-          >
+      <React.Fragment key={pageIndex}>
 
-            <div className="multi-print-header">
+        <div className="multi-print-page">
 
-              <h1>
-                {title}
-              </h1>
+          <div className="multi-print-header">
 
-              {pages.length > 1 && (
+            <h1>
+              {title}
+            </h1>
 
-                <span>
-                  Page{' '}
-                  {pageIndex + 1}
-                  {' / '}
-                  {pages.length}
-                </span>
+            {pages.length > 1 && (
 
-              )}
+              <span>
+                Page {pageIndex + 1} / {pages.length}
+              </span>
 
-            </div>
+            )}
+
+          </div>
 
 
-            <table className="multi-print-table">
+          <table className="multi-print-table">
 
-              <thead>
+            <thead>
 
-                <tr>
+              <tr>
 
-                  <th className="multi-time-column">
-                    Jour
-                  </th>
+                <th className="multi-time-column">
+                  Jour
+                </th>
 
-                  <th className="multi-hour-column">
-                    H
-                  </th>
+                <th className="multi-hour-column">
+                  H
+                </th>
+
+                {pageEntities.map(
+                  (entity) => (
+
+                    <th key={entity}>
+                      {entity}
+                    </th>
+
+                  )
+                )}
+
+              </tr>
+
+            </thead>
 
 
-                  {pageEntities.map(
-                    (entity) => (
+            <tbody>
 
-                      <th key={entity}>
-                        {entity}
-                      </th>
+              {DAYS_OF_WEEK.map(
+                (day) => (
 
-                    )
-                  )}
+                  <React.Fragment key={day}>
 
-                </tr>
-
-              </thead>
-
-
-              <tbody>
-
-                {DAYS_OF_WEEK.map(
-                  (day) => (
-
-                    <React.Fragment
-                      key={day}
-                    >
-
-                     {HOURS_OF_DAY
-  .filter(
-    (hour) =>
-      day !== '3' ||
-      Number(hour) <= 4
-  )
-  .map(
+                    {HOURS_OF_DAY
+                      .filter(
+                        (hour) =>
+                          day !== '3' ||
+                          Number(hour) <= 4
+                      )
+                      .map(
                         (
                           hour,
                           hourIndex
@@ -1198,31 +1191,24 @@ const MultiPrintView = ({
                             }
                           >
 
-
                             {hourIndex === 0 && (
 
                               <td
                                 rowSpan={
-  day === '3'
-    ? 4
-    : HOURS_OF_DAY.length
-}
+                                  day === '3'
+                                    ? 4
+                                    : HOURS_OF_DAY.length
+                                }
                                 className="multi-day"
                               >
-
                                 {DAY_MAP[day]}
-
                               </td>
 
                             )}
 
-
                             <td className="multi-hour">
-
                               {hour}
-
                             </td>
-
 
                             {pageEntities.map(
                               (entity) => (
@@ -1239,13 +1225,11 @@ const MultiPrintView = ({
                                 >
 
                                   {renderCompactCell(
-
                                     getEntriesForSlot(
                                       entity,
                                       day,
                                       hour
                                     )
-
                                   )}
 
                                 </td>
@@ -1253,30 +1237,35 @@ const MultiPrintView = ({
                               )
                             )}
 
-
                           </tr>
 
                         )
                       )}
 
-                    </React.Fragment>
+                  </React.Fragment>
 
-                  )
-                )}
+                )
+              )}
 
-              </tbody>
+            </tbody>
 
-            </table>
+          </table>
 
-          </div>
+        </div>
 
-        )
-      )}
 
-    </div>
+        {pageIndex < pages.length - 1 && (
 
-  );
-};
+          <div className="print-page-break" />
+
+        )}
+
+      </React.Fragment>
+
+    )
+  )}
+
+</div>
 
 /* =========================================================
    APPLICATION
@@ -2558,7 +2547,20 @@ return (
     <style>{`
 
       @media print {
+.print-page-break {
+  display: block !important;
+  width: 100% !important;
+  height: 0 !important;
+  page-break-after: always !important;
+  break-after: page !important;
+}
 
+.multi-print-page {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  page-break-inside: avoid !important;
+  break-inside: avoid-page !important;
+}
         @page {
           size: A4 portrait;
           margin: 4mm;
