@@ -709,30 +709,22 @@ const ScheduleModal = ({
       width: 100%;
     }
 
-    .multi-print-page {
+   .multi-print-page {
   width: 100%;
   box-sizing: border-box;
 
-  break-before: page;
-  page-break-before: always;
+  break-after: page !important;
+  page-break-after: always !important;
 
-  break-after: page;
-  page-break-after: always;
-
-  break-inside: avoid;
-  page-break-inside: avoid;
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
 
   overflow: visible !important;
 }
 
-.multi-print-page:first-child {
-  break-before: auto;
-  page-break-before: auto;
-}
-
 .multi-print-page:last-child {
-  break-after: auto;
-  page-break-after: auto;
+  break-after: auto !important;
+  page-break-after: auto !important;
 }
 
     .multi-print-header {
