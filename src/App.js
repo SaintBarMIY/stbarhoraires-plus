@@ -1101,8 +1101,6 @@ const MultiPrintView = ({
 
   return (
 
-return (
-
   <div id="multi-print-area">
 
     {pages.map(
