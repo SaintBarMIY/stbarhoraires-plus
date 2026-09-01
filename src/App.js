@@ -837,7 +837,43 @@ const ScheduleModal = ({
       border-top-width: 1.2pt;
       border-top-color: #333;
     }
+.multi-print-table tbody tr {
+  height: 5.4mm !important;
+  max-height: 5.4mm !important;
+}
 
+.multi-print-table tbody td {
+  height: 5.4mm !important;
+  max-height: 5.4mm !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.multi-course-cell {
+  height: 5.4mm !important;
+  max-height: 5.4mm !important;
+  padding: 0 0.2mm !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  vertical-align: middle !important;
+}
+
+.multi-entry {
+  display: block !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 5.2pt !important;
+  line-height: 5mm !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: clip !important;
+}
+
+.multi-entry strong,
+.multi-entry span {
+  white-space: nowrap !important;
+}
   }
   .multi-entry strong,
 .multi-entry span {
