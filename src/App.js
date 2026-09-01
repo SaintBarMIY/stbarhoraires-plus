@@ -1101,172 +1101,180 @@ const MultiPrintView = ({
 
   return (
 
-<div id="multi-print-area">
+return (
 
-  {pages.map(
-    (
-      pageEntities,
-      pageIndex
-    ) => (
+  <div id="multi-print-area">
 
-      <React.Fragment key={pageIndex}>
+    {pages.map(
+      (
+        pageEntities,
+        pageIndex
+      ) => (
 
-        <div className="multi-print-page">
+        <React.Fragment key={pageIndex}>
 
-          <div className="multi-print-header">
+          <div className="multi-print-page">
 
-            <h1>
-              {title}
-            </h1>
+            <div className="multi-print-header">
 
-            {pages.length > 1 && (
+              <h1>
+                {title}
+              </h1>
 
-              <span>
-                Page {pageIndex + 1} / {pages.length}
-              </span>
+              {pages.length > 1 && (
 
-            )}
+                <span>
+                  Page{' '}
+                  {pageIndex + 1}
+                  {' / '}
+                  {pages.length}
+                </span>
 
-          </div>
+              )}
+
+            </div>
 
 
-          <table className="multi-print-table">
+            <table className="multi-print-table">
 
-            <thead>
+              <thead>
 
-              <tr>
+                <tr>
 
-                <th className="multi-time-column">
-                  Jour
-                </th>
+                  <th className="multi-time-column">
+                    Jour
+                  </th>
 
-                <th className="multi-hour-column">
-                  H
-                </th>
+                  <th className="multi-hour-column">
+                    H
+                  </th>
 
-                {pageEntities.map(
-                  (entity) => (
+                  {pageEntities.map(
+                    (entity) => (
 
-                    <th key={entity}>
-                      {entity}
-                    </th>
+                      <th key={entity}>
+                        {entity}
+                      </th>
+
+                    )
+                  )}
+
+                </tr>
+
+              </thead>
+
+
+              <tbody>
+
+                {DAYS_OF_WEEK.map(
+                  (day) => (
+
+                    <React.Fragment key={day}>
+
+                      {HOURS_OF_DAY
+                        .filter(
+                          (hour) =>
+                            day !== '3' ||
+                            Number(hour) <= 4
+                        )
+                        .map(
+                          (
+                            hour,
+                            hourIndex
+                          ) => (
+
+                            <tr
+                              key={
+                                day +
+                                '-' +
+                                hour
+                              }
+                              className={
+                                hourIndex === 0
+                                  ? 'first-hour-day'
+                                  : ''
+                              }
+                            >
+
+                              {hourIndex === 0 && (
+
+                                <td
+                                  rowSpan={
+                                    day === '3'
+                                      ? 4
+                                      : HOURS_OF_DAY.length
+                                  }
+                                  className="multi-day"
+                                >
+                                  {DAY_MAP[day]}
+                                </td>
+
+                              )}
+
+                              <td className="multi-hour">
+                                {hour}
+                              </td>
+
+                              {pageEntities.map(
+                                (entity) => (
+
+                                  <td
+                                    key={
+                                      entity +
+                                      '-' +
+                                      day +
+                                      '-' +
+                                      hour
+                                    }
+                                    className="multi-course-cell"
+                                  >
+
+                                    {renderCompactCell(
+                                      getEntriesForSlot(
+                                        entity,
+                                        day,
+                                        hour
+                                      )
+                                    )}
+
+                                  </td>
+
+                                )
+                              )}
+
+                            </tr>
+
+                          )
+                        )}
+
+                    </React.Fragment>
 
                   )
                 )}
 
-              </tr>
+              </tbody>
 
-            </thead>
+            </table>
 
-
-            <tbody>
-
-              {DAYS_OF_WEEK.map(
-                (day) => (
-
-                  <React.Fragment key={day}>
-
-                    {HOURS_OF_DAY
-                      .filter(
-                        (hour) =>
-                          day !== '3' ||
-                          Number(hour) <= 4
-                      )
-                      .map(
-                        (
-                          hour,
-                          hourIndex
-                        ) => (
-
-                          <tr
-                            key={
-                              day +
-                              '-' +
-                              hour
-                            }
-                            className={
-                              hourIndex === 0
-                                ? 'first-hour-day'
-                                : ''
-                            }
-                          >
-
-                            {hourIndex === 0 && (
-
-                              <td
-                                rowSpan={
-                                  day === '3'
-                                    ? 4
-                                    : HOURS_OF_DAY.length
-                                }
-                                className="multi-day"
-                              >
-                                {DAY_MAP[day]}
-                              </td>
-
-                            )}
-
-                            <td className="multi-hour">
-                              {hour}
-                            </td>
-
-                            {pageEntities.map(
-                              (entity) => (
-
-                                <td
-                                  key={
-                                    entity +
-                                    '-' +
-                                    day +
-                                    '-' +
-                                    hour
-                                  }
-                                  className="multi-course-cell"
-                                >
-
-                                  {renderCompactCell(
-                                    getEntriesForSlot(
-                                      entity,
-                                      day,
-                                      hour
-                                    )
-                                  )}
-
-                                </td>
-
-                              )
-                            )}
-
-                          </tr>
-
-                        )
-                      )}
-
-                  </React.Fragment>
-
-                )
-              )}
-
-            </tbody>
-
-          </table>
-
-        </div>
+          </div>
 
 
-        {pageIndex < pages.length - 1 && (
+          {pageIndex < pages.length - 1 && (
 
-          <div className="print-page-break" />
+            <div className="print-page-break" />
 
-        )}
+          )}
 
-      </React.Fragment>
+        </React.Fragment>
 
-    )
-  )}
+      )
+    )}
 
-</div>
+  </div>
 
+);
+
+};
 /* =========================================================
    APPLICATION
 ========================================================= */
