@@ -681,135 +681,194 @@ const ScheduleModal = ({
       </div>
       <style>{`
 
-        .schedule-cell {
-          border-radius: 6px;
-          padding: 6px;
-          min-height: 58px;
-        }
+  #multi-print-area {
+    display: none;
+  }
 
-        .schedule-cell-blue {
-          background: #eff6ff;
-          border-left: 4px solid #3b82f6;
-        }
+  @media print {
 
-        .schedule-cell-green {
-          background: #f0fdf4;
-          border-left: 4px solid #22c55e;
-        }
+    @page {
+      size: A4 portrait;
+      margin: 4mm;
+    }
 
-        .schedule-cell-purple {
-          background: #faf5ff;
-          border-left: 4px solid #a855f7;
-        }
+    html,
+    body {
+      margin: 0 !important;
+      padding: 0 !important;
+      background: white !important;
+    }
 
-        .schedule-row {
-          min-height: 70px;
-        }
+    body * {
+      visibility: hidden;
+    }
 
-        .schedule-table th {
-          position: sticky;
-          top: 0;
-        }
+    #multi-print-area,
+    #multi-print-area * {
+      visibility: visible;
+    }
 
+    #multi-print-area {
+      display: block !important;
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+    }
 
-        @media (max-width: 640px) {
+    .multi-print-page {
+      width: 100%;
+      height: 289mm;
+      box-sizing: border-box;
 
-          .schedule-scroll {
-            max-height: 65vh;
-          }
+      page-break-after: always;
+      break-after: page;
 
-          .schedule-cell {
-            padding: 5px;
-            min-height: 55px;
-          }
+      overflow: hidden;
+    }
 
-          .schedule-row {
-            height: 70px;
-          }
+    .multi-print-page:last-child {
+      page-break-after: auto;
+      break-after: auto;
+    }
 
-        }
+    .multi-print-header {
+      height: 8mm;
 
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
 
-        @media print {
+      margin-bottom: 1mm;
+    }
 
-          @page {
-            size: landscape;
-            margin: 8mm;
-          }
+    .multi-print-header h1 {
+      margin: 0;
 
-          body {
-            background: white !important;
-          }
+      font-size: 12pt;
+      font-weight: bold;
+    }
 
-          body * {
-            visibility: hidden;
-          }
+    .multi-print-header span {
+      font-size: 7pt;
+    }
 
-          .print-container,
-          .print-container * {
-            visibility: visible;
-          }
+    .multi-print-table {
+      width: 100%;
 
-          .print-container {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100% !important;
-            height: auto !important;
-            background: white !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            display: block !important;
-          }
+      border-collapse: collapse;
+      table-layout: fixed;
 
-          .print-area {
-            width: 100% !important;
-            max-width: none !important;
-            box-shadow: none !important;
-            border-radius: 0 !important;
-            padding: 0 !important;
-            margin: 0 !important;
-          }
+      font-size: 6.5pt;
 
-          .no-print {
-            display: none !important;
-          }
+      line-height: 1.1;
+    }
 
-          .print-header {
-            margin-bottom: 8px !important;
-          }
+    .multi-print-table th,
+    .multi-print-table td {
+      border: 0.4pt solid #777;
 
-          .schedule-scroll {
-            overflow: visible !important;
-            max-height: none !important;
-            width: 100% !important;
-          }
+      padding: 0.6mm;
 
-          .schedule-table {
-            width: 100% !important;
-            min-width: 0 !important;
-            font-size: 10px !important;
-            border-collapse: collapse !important;
-          }
+      vertical-align: middle;
 
-          .schedule-table th {
-            position: static !important;
-            background: #eeeeee !important;
-          }
+      overflow: hidden;
+    }
 
-          .schedule-table th,
-          .schedule-table td {
-            border: 1px solid #999 !important;
-          }
+    .multi-print-table thead th {
+      height: 6mm;
 
-          .schedule-cell {
-            min-height: 45px !important;
-            padding: 4px !important;
-          }
+      background: #eeeeee !important;
 
-        }
+      font-size: 7.5pt;
 
-      `}</style>
+      font-weight: bold;
+
+      text-align: center;
+    }
+
+    /* Colonne JOUR très étroite */
+
+    .multi-time-column {
+      width: 6mm;
+      padding: 0 !important;
+    }
+
+    /* Colonne numéro de l'heure */
+
+    .multi-hour-column {
+      width: 6mm;
+      padding: 0 !important;
+    }
+
+    .multi-day {
+      width: 6mm;
+
+      padding: 0 !important;
+
+      font-size: 6.5pt;
+
+      font-weight: bold;
+
+      text-align: center;
+
+      background: #f2f2f2 !important;
+
+      writing-mode: vertical-rl;
+
+      transform: rotate(180deg);
+    }
+
+    .multi-hour {
+      width: 6mm;
+
+      padding: 0 !important;
+
+      font-size: 7pt;
+
+      font-weight: bold;
+
+      text-align: center;
+
+      background: #fafafa !important;
+    }
+
+    .multi-course-cell {
+      height: 6.1mm;
+
+      padding: 0.5mm !important;
+
+      text-align: center;
+
+      white-space: normal;
+
+      overflow: hidden;
+    }
+
+    .multi-entry {
+      margin: 0;
+
+      padding: 0;
+
+      line-height: 1.1;
+    }
+
+    .multi-entry strong {
+      font-weight: bold;
+    }
+
+    .multi-room {
+      font-size: 5.8pt;
+    }
+
+    .first-hour-day td {
+      border-top-width: 1.2pt;
+      border-top-color: #333;
+    }
+
+  }
+
+`}</style>
 
     </div>
 
@@ -835,7 +894,7 @@ const MultiPrintView = ({
     return null;
   }
 
-  const MAX_PER_PAGE = 10;
+  const MAX_PER_PAGE = 8;
 
   const pages = [];
 
