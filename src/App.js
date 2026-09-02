@@ -2011,7 +2011,8 @@ const handleFileUpload =
 
           const profHoursCounter =
             {};
-
+const profUniqueSlots =
+  {};
 
           const lines =
             textContent.split(
@@ -2181,14 +2182,23 @@ const handleFileUpload =
               );
 
 
-              profHoursCounter[
-                profSigle
-              ] =
-                (
-                  profHoursCounter[
-                    profSigle
-                  ] || 0
-                ) + 1;
+           if (
+  !profUniqueSlots[
+    profSigle
+  ]
+) {
+
+  profUniqueSlots[
+    profSigle
+  ] = new Set();
+
+}
+
+profUniqueSlots[
+  profSigle
+].add(
+  day + '-' + hour
+);
 
 
               importedLines++;
@@ -2196,6 +2206,22 @@ const handleFileUpload =
             }
           );
 
+/* CALCUL DU NOMBRE REEL D'HEURES PAR PROFESSEUR */
+
+          Object.keys(
+            profUniqueSlots
+          ).forEach(
+            (profSigle) => {
+
+              profHoursCounter[
+                profSigle
+              ] =
+                profUniqueSlots[
+                  profSigle
+                ].size;
+
+            }
+          );
 
           if (
             importedLines === 0
